@@ -72,7 +72,7 @@ const tiles = [
   {
     id: "skills",
     section: "skills",
-    label: "Skills & Tools",
+    label: "Skills",
     sublabel: "Python · Rust · LLMs · MCP",
     gradient: "linear-gradient(135deg, #A855F7, #6366F1)",
     emoji: "🛠️",
@@ -263,7 +263,7 @@ const hotspots = [
   },
   {
     id: "books",
-    label: "Skills & Tools",
+    label: "Skills",
     section: "skills",
     // Book stack (Data Structures, Web Dev, System Design) — left side
     x: "5%", y: "43%", w: "16%", h: "30%",
@@ -275,9 +275,33 @@ const hotspots = [
 
 function InteractiveHero() {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [tapped, setTapped] = useState<string | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  // On mobile: tap toggles active state; tapping outside dismisses
+  const handleSpotInteraction = (spotId: string) => {
+    if (isTouchDevice) {
+      setTapped((prev) => (prev === spotId ? null : spotId));
+    }
+  };
+
+  // The active spot is whichever is hovered (desktop) or tapped (mobile)
+  const activeSpot = isTouchDevice ? tapped : hovered;
 
   return (
-    <div className="relative rounded-2xl overflow-hidden shadow-xl group">
+    <div
+      className="relative rounded-2xl overflow-hidden shadow-xl group"
+      onClick={(e) => {
+        // Tap outside any hotspot to dismiss on mobile
+        if (isTouchDevice && (e.target as HTMLElement).closest('[data-hotspot]') === null) {
+          setTapped(null);
+        }
+      }}
+    >
       {/* Hero illustration */}
       <img
         src="/hero.jpg"
@@ -286,20 +310,27 @@ function InteractiveHero() {
         draggable={false}
       />
 
-      {/* Dim overlay when any hotspot is hovered */}
+      {/* Dim overlay when any hotspot is active */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity duration-300 pointer-events-none"
-        style={{ opacity: hovered ? 1 : 0 }}
+        style={{ opacity: activeSpot ? 1 : 0 }}
       />
 
       {/* Hotspot regions */}
       {hotspots.map((spot) => {
-        const isActive = hovered === spot.id;
+        const isActive = activeSpot === spot.id;
         return (
           <div
   key={spot.id}
-  onClick={() => {
-    if (spot.id !== "contact") {
+  data-hotspot
+  onClick={(e) => {
+    handleSpotInteraction(spot.id);
+    // On desktop or if already active on mobile, navigate
+    if (!isTouchDevice && spot.id !== "contact") {
+      const el = document.getElementById(spot.section);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+    if (isTouchDevice && isActive && spot.id !== "contact") {
       const el = document.getElementById(spot.section);
       if (el) el.scrollIntoView({ behavior: "smooth" });
     }
@@ -322,33 +353,44 @@ function InteractiveHero() {
               backdropFilter: isActive ? "brightness(2.2) saturate(1.2)" : "none",
               WebkitBackdropFilter: isActive ? "brightness(2.2) saturate(1.2)" : "none",
             }}
-            onMouseEnter={() => setHovered(spot.id)}
-            onMouseLeave={() => setHovered(null)}
+            onMouseEnter={() => !isTouchDevice && setHovered(spot.id)}
+            onMouseLeave={() => !isTouchDevice && setHovered(null)}
           >
             {/* Tooltip label */}
-            <span
-  className="absolute left-1/2 -translate-x-1/2 font-mono text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all duration-300 pointer-events-none"
-  style={{
-    bottom: "100%",        // attach to top edge of hotspot
-    marginBottom: "6px",   // small gap above hotspot
-    background: isActive ? spot.color : "transparent",
-    color: isActive ? "white" : "transparent",
-    opacity: isActive ? 1 : 0,
-    transform: isActive
-      ? "translateX(-50%) translateY(0)"
-      : "translateX(-50%) translateY(4px)",
-  }}
->
-  {spot.label}
-</span>
+            {(() => {
+              const nearTop = parseFloat(spot.y) < 15;
+              return (
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 font-mono text-[9px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full whitespace-nowrap transition-all duration-300 pointer-events-none"
+                  style={{
+                    ...(nearTop
+                      ? { top: "100%", marginTop: "4px" }
+                      : { bottom: "100%", marginBottom: "4px" }),
+                    background: isActive ? spot.color : "transparent",
+                    color: isActive ? "white" : "transparent",
+                    opacity: isActive ? 1 : 0,
+                    transform: isActive
+                      ? "translateX(-50%) translateY(0)"
+                      : `translateX(-50%) translateY(${nearTop ? "-4px" : "4px"})`,
+                  }}
+                >
+                  {spot.label}
+                </span>
+              );
+            })()}
 {spot.id === "contact" && isActive && (
   <div
-    className="absolute left-1/2 -translate-x-1/2 top-full mt-3 p-4 rounded-xl shadow-xl text-sm font-mono bg-white border border-gray-200"
-    style={{ width: "220px" }}
+    className="absolute top-full mt-2 sm:mt-3 p-3 sm:p-4 rounded-xl shadow-xl text-xs sm:text-sm font-mono bg-white border border-gray-200 z-50"
+    style={{
+      width: "min(220px, calc(100vw - 2rem))",
+      left: "50%",
+      transform: "translateX(-50%)",
+    }}
+    onClick={(e) => e.stopPropagation()}
   >
    
 <p className="text-gray-700 mb-2">
-  Let’s get coffee! For collaborations or conversations, hmu on{" "}
+  Let&#39;s get coffee! For collaborations or conversations, hmu on{" "}
   <a
     href="https://linkedin.com/in/swathi-mohan-01333721a"
     target="_blank"
@@ -368,10 +410,11 @@ function InteractiveHero() {
 
       {/* Instruction text */}
       <div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white/80 text-xs font-mono px-4 py-2 rounded-full transition-opacity duration-500 pointer-events-none"
-        style={{ opacity: hovered ? 0 : 1 }}
+        className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white/80 text-[8px] sm:text-[10px] md:text-xs font-mono px-2 py-1 sm:px-4 sm:py-2 rounded-full transition-opacity duration-500 pointer-events-none whitespace-nowrap max-w-[90%] text-center"
+        style={{ opacity: activeSpot ? 0 : 1 }}
       >
-        Hover over items to explore · Click to jump ↓
+        <span className="hidden sm:inline">Hover over items to explore · Click to jump ↓</span>
+        <span className="sm:hidden">Tap items to explore · </span>
       </div>
     </div>
   );
@@ -393,7 +436,7 @@ function ExperienceCard({ exp }: { exp: (typeof experiences)[0] }) {
 
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left p-6 cursor-pointer"
+        className="w-full text-left p-4 sm:p-6 cursor-pointer"
       >
           <div className="flex items-start justify-between">
   <div className="flex gap-3 items-start">
@@ -406,7 +449,7 @@ function ExperienceCard({ exp }: { exp: (typeof experiences)[0] }) {
     />
 
     <div>
-      <h3 className="text-lg font-semibold text-gray-900">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">
         {exp.role}
         <span className="text-gray-400 font-normal">
           {" "}
@@ -414,7 +457,7 @@ function ExperienceCard({ exp }: { exp: (typeof experiences)[0] }) {
         </span>
       </h3>
 
-      <p className="text-sm text-gray-400 font-mono mt-1">
+      <p className="text-xs sm:text-sm text-gray-400 font-mono mt-1">
         {exp.period}
       </p>
     </div>
@@ -584,12 +627,12 @@ function FloatingNav() {
   ];
 
   return (
-    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-xl border border-gray-200 rounded-full px-2 py-2 flex gap-1 shadow-lg transition-all duration-300">
+    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-xl border border-gray-200 rounded-full px-1.5 py-1.5 sm:px-2 sm:py-2 flex gap-0.5 sm:gap-1 shadow-lg transition-all duration-300 max-w-[95vw]">
       {links.map((l) => (
         <a
           key={l.id}
           href={`#${l.id}`}
-          className="text-xs font-mono px-4 py-2 rounded-full transition-all duration-200"
+          className="text-[10px] sm:text-xs font-mono px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all duration-200"
           style={{
             background: active === l.id ? "#6366F1" : "transparent",
             color: active === l.id ? "white" : "#9ca3af",
@@ -701,9 +744,9 @@ export default function Home() {
 
         {/* ─── Experience ─── */}
         <section id="experience" className="mt-28 scroll-mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="w-3 h-3 rounded-full bg-indigo-500" />
-            <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">
+          <div className="flex items-center gap-2 sm:gap-3 mb-8">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-indigo-500 shrink-0" />
+            <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] text-gray-400 shrink-0">
               Experience
             </h2>
             <div className="flex-1 h-px bg-gray-100" />
@@ -719,9 +762,9 @@ export default function Home() {
 
         {/* ─── Projects ─── */}
         <section id="projects" className="mt-28 scroll-mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="w-3 h-3 rounded-full bg-rose-500" />
-            <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">
+          <div className="flex items-center gap-2 sm:gap-3 mb-8">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500 shrink-0" />
+            <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] text-gray-400 shrink-0">
               Projects
             </h2>
             <div className="flex-1 h-px bg-gray-100" />
@@ -735,10 +778,10 @@ export default function Home() {
 
         {/* ─── Skills ─── */}
         <section id="skills" className="mt-28 scroll-mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="w-3 h-3 rounded-full bg-purple-500" />
-            <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">
-              Skills & Tools
+          <div className="flex items-center gap-2 sm:gap-3 mb-8">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-purple-500 shrink-0" />
+            <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] text-gray-400 shrink-0">
+              Skills
             </h2>
             <div className="flex-1 h-px bg-gray-100" />
           </div>
@@ -751,7 +794,7 @@ export default function Home() {
       </h3>
 
 <div
-  className="pl-6 space-y-6 relative"
+  className="pl-4 sm:pl-6 space-y-4 sm:space-y-6 relative overflow-visible"
   style={{ borderLeft: `2px solid ${group.color}40` }}
 >
 
@@ -770,7 +813,7 @@ export default function Home() {
   style={{ background: group.color, opacity: 0.5 }}
 />
 
-<span className="text-sm font-mono text-gray-700 group-hover:text-gray-900 transition-colors ml-4">
+<span className="text-xs sm:text-sm font-mono text-gray-700 group-hover:text-gray-900 transition-colors ml-4 break-words">
         {item}
   </span>
 
@@ -786,15 +829,15 @@ export default function Home() {
 
 
         <section id="extracurriculars" className="mt-28 scroll-mt-20">
-  <div className="flex items-center gap-3 mb-8">
-    <span className="w-3 h-3 rounded-full bg-purple-500" />
-    <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">
+  <div className="flex items-center gap-2 sm:gap-3 mb-8">
+    <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-purple-500 shrink-0" />
+    <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] text-gray-400 shrink-0">
       Extracurriculars
     </h2>
     <div className="flex-1 h-px bg-gray-100" />
   </div>
 
-  <div className="flex flex-wrap gap-3">
+  <div className="flex flex-wrap gap-2 sm:gap-3">
   {[
     "Running — signing up for marathons to remember pain is temporary",
     "Public speaking & debates",
@@ -806,7 +849,7 @@ export default function Home() {
   ].map((item, i) => (
     <span
       key={i}
-      className="text-sm px-4 py-2 rounded-xl font-mono transition-all duration-200 hover:scale-105 hover:-translate-y-0.5"
+      className="text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-mono transition-all duration-200 hover:scale-105 hover:-translate-y-0.5"
       style={{
         background: "linear-gradient(135deg,#f5f3ff,#eef2ff)",
         color: "#6b21a8",
@@ -822,9 +865,9 @@ export default function Home() {
 
         {/* ─── Education ─── */}
         <section id="education" className="mt-28 scroll-mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="w-3 h-3 rounded-full bg-amber-500" />
-            <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">
+          <div className="flex items-center gap-2 sm:gap-3 mb-8">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-500 shrink-0" />
+            <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.2em] text-gray-400 shrink-0">
               Education
             </h2>
             <div className="flex-1 h-px bg-gray-100" />
@@ -833,10 +876,10 @@ export default function Home() {
             className="rounded-2xl p-6 border border-gray-100"
             style={{ borderLeftWidth: "4px", borderLeftColor: "#F59E0B" }}
           >
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
               Manipal Institute of Technology
             </h3>
-            <p className="text-sm font-mono text-gray-400 mt-1">
+            <p className="text-xs sm:text-sm font-mono text-gray-400 mt-1 break-words">
               B.Tech CS & Engineering (Minor: Data Science) · CGPA 9.26 ·
               2020—2024
             </p>
