@@ -90,7 +90,7 @@ const experiences = [
     summary:
       "Building multi-agent AI systems for autonomous code repair and C→Rust translation.",
     bullets: [
-      "Agentic system combining AST-based static analysis with LLM-driven classification for Rust code repair. [95–100% recall] across [200+ crates] and [170k+ LoC].",
+      "Agentic system combining AST-based static analysis with LLM-driven classification for Rust code repair. [80-95% recall] across [150+ crates] and [300k+ LoC].",
       "Pointer ownership inference for C→Rust using call graphs, topological propagation, and RL-based translation with backtracking.  [Reduced manual annotation ~80%].",
       "Implemented on Model Context Protocol (MCP), integrated with GitHub Copilot and Claude Code. ",
       "[Featured in Rust@M365 newsletter].",
@@ -134,7 +134,7 @@ const projects = [
     description:
       "Multi-agent system that detects and fixes coding guideline violations in Rust codebases. Combines AST-based static analysis to extract structural code features with LLM-driven classification.",
     detail:
-      "Designed a multi-agent architecture with an orchestrator delegating to specialized subagents for violation detection, classification, and fix generation — operating in an autonomous loop with build/test validation. Achieved 95–100% recall (vs. 10–50% with vanilla LLM) and <5% missed violations; deployed across 200+ Rust crates and 170k+ LoC.",
+      "Designed a multi-agent architecture with an orchestrator delegating to specialized subagents for violation detection, classification, and fix generation — operating in an autonomous loop with build/test validation. Achieved 80-95% recall (vs. 10–50% with vanilla LLM) and <10% missed violations; deployed across 150+ Rust crates and 300k+ LoC.",
     tags: ["Agentic AI", "Rust", "MCP", "Multi-Agent", "AST"],
   },
   {
@@ -171,7 +171,7 @@ const projects = [
 
 {
   id: "meeting-assistant",
-  name: "LLM Meeting Assistant",
+  name: "LLM GMeet Assistant",
   color: "#8B5CF6",
   description:
     "Chrome extension that captures live meeting transcripts and generates summaries and action items.",
